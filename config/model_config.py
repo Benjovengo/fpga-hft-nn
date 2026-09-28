@@ -71,6 +71,14 @@ DATA_INTERVAL = "1m"
 # allows longer datasets to be assembled from multiple requests.
 DATA_CHUNK_DAYS = 7
 
+# Safety margin applied to recent 1-minute history requests.
+#
+# Yahoo validates the request against its own current time. Requesting exactly
+# 30 days can therefore become slightly older than the allowed window while
+# the request is being processed. Keeping one day of margin avoids rejecting
+# the oldest chunk at the 30-day boundary.
+DATA_HISTORY_MARGIN_DAYS = 1
+
 
 # =============================================================================
 # Neural-network input features

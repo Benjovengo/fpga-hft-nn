@@ -83,6 +83,7 @@ from config.model_config import (
     DATA_CHUNK_DAYS,
     DATA_INTERVAL,
     DATA_PERIOD,
+    DATA_HISTORY_MARGIN_DAYS,
     RAW_DATA_DIR,
     RAW_DATA_FILE,
     TICKER,
@@ -191,6 +192,15 @@ def download_data():
         timezone.utc
     )
 
+    # Apply a safety margin before calculating the beginning of the complete
+    # requested acquisition window. Yahoo checks the start timestamp against
+    # its own current time, so a request starting exactly 30 days ago can be
+    # rejected a few seconds later as being outside the allowed history.
+    effective_days = max(
+        1,
+        number_days - DATA_HISTORY_MARGIN_DAYS,
+    )
+
     # Calculate the beginning of the complete requested acquisition window.
     #
     # For a 30-day configuration:
@@ -205,7 +215,7 @@ def download_data():
         end_time
         -
         timedelta(
-            days=number_days
+            days=effective_days
         )
     )
 
