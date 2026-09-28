@@ -63,6 +63,14 @@ DATA_PERIOD = "30d"
 # received directly from the Ethernet interface.
 DATA_INTERVAL = "1m"
 
+# Maximum number of calendar days requested in a single 1-minute
+# market-data request.
+#
+# Yahoo currently limits 1-minute data requests to approximately 8 days.
+# Using a smaller 7-day chunk provides margin around the provider limit and
+# allows longer datasets to be assembled from multiple requests.
+DATA_CHUNK_DAYS = 7
+
 
 # =============================================================================
 # Neural-network input features
