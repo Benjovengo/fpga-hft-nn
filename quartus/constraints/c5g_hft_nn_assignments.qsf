@@ -1,0 +1,87 @@
+# =============================================================================
+# Terasic Cyclone V GX Starter Kit (C5G) assignments for the HFT NN bring-up.
+#
+# Target device used by Quartus:
+#     Cyclone V GX 5CGXFC5C6F27C7
+#
+# Board ordering code is commonly shown by Terasic as 5CGXFC5C6F27C7N.
+# Quartus project device selection uses 5CGXFC5C6F27C7.
+#
+# This file intentionally contains board/device assignments only.
+# VHDL source files should be added through Quartus Project -> Add/Remove Files
+# in Project, keeping repository source ownership outside the generated Quartus
+# project metadata.
+# =============================================================================
+
+# Target FPGA family and device.
+set_global_assignment -name FAMILY "Cyclone V"
+set_global_assignment -name DEVICE 5CGXFC5C6F27C7
+
+# Top-level VHDL entity used for initial board bring-up.
+set_global_assignment -name TOP_LEVEL_ENTITY hft_nn_top
+
+# Use VHDL-2008 because the project uses unconstrained array types and modern
+# VHDL constructs consistently across the RTL.
+set_global_assignment -name VHDL_INPUT_VERSION VHDL_2008
+
+# Keep generated compilation products below the Quartus project directory.
+set_global_assignment -name PROJECT_OUTPUT_DIRECTORY output_files
+
+# ----------------------------------------------------------------------------
+# 50 MHz clock oscillator.
+#
+# C5G user-manual signal:
+#     CLOCK_50_B5B
+#
+# FPGA pin:
+#     PIN_R20
+#
+# Electrical standard:
+#     3.3-V
+# ----------------------------------------------------------------------------
+set_location_assignment PIN_R20 -to CLOCK_50_B5B
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to CLOCK_50_B5B
+
+# ----------------------------------------------------------------------------
+# KEY0 - active-low reset button.
+#
+# C5G user manual lists KEY0 on PIN_P11 using the 1.2-V I/O domain.
+# ----------------------------------------------------------------------------
+set_location_assignment PIN_P11 -to KEY0
+set_instance_assignment -name IO_STANDARD "1.2 V" -to KEY0
+
+# ----------------------------------------------------------------------------
+# KEY1 - active-low inference trigger button.
+#
+# C5G user manual lists KEY1 on PIN_P12 using the 1.2-V I/O domain.
+# ----------------------------------------------------------------------------
+set_location_assignment PIN_P12 -to KEY1
+set_instance_assignment -name IO_STANDARD "1.2 V" -to KEY1
+
+# ----------------------------------------------------------------------------
+# LEDG0 - latched inference-complete indicator.
+#
+# FPGA pin:
+#     PIN_L7
+#
+# C5G LED bank standard:
+#     2.5-V
+# ----------------------------------------------------------------------------
+set_location_assignment PIN_L7 -to LEDG0
+set_instance_assignment -name IO_STANDARD "2.5 V" -to LEDG0
+
+# ----------------------------------------------------------------------------
+# LEDR[3:0] equivalent discrete top-level ports.
+# These four LEDs display latency_cycles(3 downto 0) in binary.
+# ----------------------------------------------------------------------------
+set_location_assignment PIN_F7 -to LEDR0
+set_instance_assignment -name IO_STANDARD "2.5 V" -to LEDR0
+
+set_location_assignment PIN_F6 -to LEDR1
+set_instance_assignment -name IO_STANDARD "2.5 V" -to LEDR1
+
+set_location_assignment PIN_G6 -to LEDR2
+set_instance_assignment -name IO_STANDARD "2.5 V" -to LEDR2
+
+set_location_assignment PIN_G7 -to LEDR3
+set_instance_assignment -name IO_STANDARD "2.5 V" -to LEDR3
