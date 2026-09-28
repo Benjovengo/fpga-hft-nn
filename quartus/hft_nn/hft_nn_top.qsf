@@ -49,7 +49,7 @@ set_global_assignment -name VHDL_FILE ../../rtl/pkg/nn_types_pkg.vhd
 set_global_assignment -name VHDL_FILE ../../rtl/pkg/nn_weights_pkg.vhd
 set_global_assignment -name VHDL_FILE ../../rtl/nn/nn_core.vhd
 set_global_assignment -name VHDL_FILE ../../rtl/top/hft_nn_top.vhd
-
+set_global_assignment -name VHDL_FILE ../../rtl/arithmetic/fixed_mul.vhd
 
 # =============================================================================
 # Timing constraints
