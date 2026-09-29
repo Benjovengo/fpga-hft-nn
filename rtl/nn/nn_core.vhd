@@ -6,26 +6,25 @@ use work.nn_types_pkg.all;
 
 
 -- =============================================================================
--- Diagnostic neural-network core
+-- Neural-network core - incremental implementation step 6.1
 -- =============================================================================
 --
--- This temporary version does not implement the neural-network arithmetic.
+-- This version adds only the input register to the already verified diagnostic
+-- pipeline.
 --
--- Its purpose is to verify that:
+-- No neural-network arithmetic is instantiated yet.
 --
---     Quartus project configuration
---     VHDL package visibility
---     top-level instantiation
---     reset handling
---     valid-signal pipeline
---     latency measurement
+-- Purpose:
 --
--- are all working before reintroducing the Dense/ReLU arithmetic.
+--     Verify that Quartus can elaborate and synthesize the complete
+--     t_data_array input register before any Dense-layer hierarchy is added.
 --
--- The interface is intentionally identical to the real nn_core interface so
--- that hft_nn_top.vhd does not need to change.
+-- Pipeline:
 --
--- The diagnostic pipeline has two registered valid stages:
+--     input_data
+--         |
+--         v
+--     input_reg
 --
 --     input_valid
 --         |
@@ -38,42 +37,32 @@ use work.nn_types_pkg.all;
 --         v
 --     output_valid
 --
--- The reported latency is therefore two clock cycles.
---
+-- The prediction remains zero.
 -- =============================================================================
 
 entity nn_core is
     port (
-        -- Neural-network clock.
+        -- Processing clock.
         clk : in std_logic;
 
         -- Active-high synchronous reset.
         rst : in std_logic;
 
-        -- One-clock pulse indicating that input_data contains a new feature
-        -- vector that must be accepted by the core.
+        -- Asserted for one clock when input_data contains a valid vector.
         input_valid : in std_logic;
 
-        -- Neural-network input feature vector.
-        --
-        -- The array type and width are defined in nn_types_pkg.
-        --
-        -- The diagnostic implementation does not currently use these values,
-        -- but the port is retained so that the interface remains identical to
-        -- the final implementation.
+        -- Eight fixed-point neural-network input features.
         input_data : in t_data_array(
             0 to C_INPUT_SIZE - 1
         );
 
-        -- One-clock pulse indicating that output_data is valid.
+        -- Asserted when the diagnostic output is valid.
         output_valid : out std_logic;
 
-        -- Neural-network prediction output.
-        --
-        -- The diagnostic implementation always drives zero.
+        -- Diagnostic output value.
         output_data : out t_data;
 
-        -- Number of clock cycles between accepted input and valid output.
+        -- Diagnostic pipeline latency.
         latency_cycles : out unsigned(
             C_TIMESTAMP_WIDTH - 1 downto 0
         )
@@ -84,109 +73,90 @@ end entity;
 architecture rtl of nn_core is
 
     -- =========================================================================
-    -- Valid-signal pipeline
+    -- Input feature register
     -- =========================================================================
 
-    -- First registered valid stage.
-    --
-    -- This captures input_valid on one rising clock edge.
-    signal valid_stage0 : std_logic := '0';
+    -- Capture the complete input vector when input_valid is asserted.
+    signal input_reg :
+        t_data_array(
+            0 to C_INPUT_SIZE - 1
+        ) :=
+        (
+            others => (
+                others => '0'
+            )
+        );
 
-    -- Second registered valid stage.
-    --
-    -- This captures valid_stage0 on the following rising clock edge.
+
+    -- =========================================================================
+    -- Valid pipeline
+    -- =========================================================================
+
+    signal valid_stage0 : std_logic := '0';
     signal valid_stage1 : std_logic := '0';
 
 begin
 
-    -- =========================================================================
-    -- Diagnostic pipeline process
-    -- =========================================================================
-    --
-    -- This process intentionally performs no neural-network arithmetic.
-    --
-    -- It verifies the control and latency path only.
-    --
-    -- Signal progression:
-    --
-    --     cycle N:
-    --         input_valid = 1
-    --
-    --     cycle N+1:
-    --         valid_stage0 = 1
-    --
-    --     cycle N+2:
-    --         valid_stage1 = 1
-    --         output_valid = 1
-    --
-    -- Therefore:
-    --
-    --     latency = 2 clock cycles
-    --
     process(clk)
     begin
 
         if rising_edge(clk) then
 
-            -- -----------------------------------------------------------------
-            -- Synchronous reset
-            -- -----------------------------------------------------------------
-
             if rst = '1' then
 
-                -- Clear both valid pipeline stages.
+                -- Clear all input feature registers.
+                input_reg <= (
+                    others => (
+                        others => '0'
+                    )
+                );
+
+                -- Clear the valid pipeline.
                 valid_stage0 <= '0';
                 valid_stage1 <= '0';
 
-                -- No output is valid during reset.
+                -- Clear diagnostic outputs.
                 output_valid <= '0';
 
-                -- Drive the diagnostic prediction to zero.
                 output_data <= (
                     others => '0'
                 );
 
-                -- Clear the latency measurement.
                 latency_cycles <= (
                     others => '0'
                 );
 
-
-            -- -----------------------------------------------------------------
-            -- Normal operation
-            -- -----------------------------------------------------------------
-
             else
 
-                -- Capture a new input transaction into the first pipeline
-                -- stage.
+                -- Advance the valid pipeline.
                 valid_stage0 <= input_valid;
-
-                -- Advance the valid bit into the second pipeline stage.
                 valid_stage1 <= valid_stage0;
 
-                -- output_valid is asserted when the transaction reaches the
-                -- second stage.
-                output_valid <= valid_stage1;
+                -- Capture a complete feature vector.
+                if input_valid = '1' then
 
-                -- The diagnostic core always produces zero.
-                --
-                -- This keeps the output deterministic while testing the
-                -- project and control structure.
+                    input_reg <=
+                        input_data;
+
+                end if;
+
+                -- Produce the diagnostic valid signal.
+                output_valid <=
+                    valid_stage1;
+
+                -- The NN arithmetic is not implemented yet.
                 output_data <= (
                     others => '0'
                 );
 
-                -- Report the expected diagnostic latency.
-                --
-                -- When valid_stage1 becomes high, the corresponding input was
-                -- accepted two clock cycles earlier.
+                -- Preserve the known two-cycle diagnostic latency.
                 if valid_stage1 = '1' then
 
-                    latency_cycles <= to_unsigned(
-                        2,
-                        C_TIMESTAMP_WIDTH
-                    );
+                    latency_cycles <=
+                        to_unsigned(
+                            2,
+                            C_TIMESTAMP_WIDTH
+                        );
 
                 end if;
 
