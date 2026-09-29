@@ -115,7 +115,78 @@ architecture rtl of nn_core is
     -- hidden-neuron arithmetic hierarchies simultaneously.
     signal neuron1_comb :
         t_data;
+    
+    -- Combinational output from hidden neuron 2.
+    signal neuron2_comb :
+        t_data;
 
+    -- Combinational output from hidden neuron 3.
+    signal neuron3_comb :
+        t_data;
+
+    -- Combinational output from hidden neuron 4.
+    signal neuron4_comb :
+        t_data;
+
+    -- Combinational output from hidden neuron 5.
+    signal neuron5_comb :
+        t_data;
+
+    -- Combinational output from hidden neuron 6.
+    signal neuron6_comb :
+        t_data;
+
+    -- Combinational output from hidden neuron 7.
+    signal neuron7_comb :
+        t_data;
+
+    -- =========================================================================
+    -- Complete hidden-layer combinational vector
+    -- =========================================================================
+    --
+    -- The eight individually instantiated hidden neurons are collected into one
+    -- fixed-size vector.
+    --
+    -- No generate statement or multidimensional array is involved.
+    --
+    -- This vector later becomes the input to the hidden-layer pipeline register.
+    signal hidden_comb :
+        t_hidden_vector;
+
+    -- =========================================================================
+    -- Registered hidden-layer vector
+    -- =========================================================================
+    --
+    -- This register forms the pipeline boundary between:
+    --
+    --     Dense 8 + ReLU
+    --
+    -- and:
+    --
+    --     Dense 1
+    --
+    -- All eight hidden-neuron values are captured simultaneously.
+    signal hidden_reg :
+        t_hidden_vector :=
+        (
+            others => (
+                others => '0'
+            )
+        );
+
+    -- =========================================================================
+    -- Output Dense-layer combinational result
+    -- =========================================================================
+    --
+    -- output_neuron computes:
+    --
+    --     Dense 8 -> 1
+    --
+    -- using the registered hidden-layer vector.
+    --
+    -- This result is captured into output_data on the next valid clock edge.
+    signal output_comb :
+        t_data;
 
     -- =========================================================================
     -- Valid pipeline
@@ -210,6 +281,189 @@ begin
             neuron_out => neuron1_comb
         );
 
+    -- =========================================================================
+    -- Hidden neuron 2
+    -- =========================================================================
+
+    u_hidden_neuron2 : entity work.hidden_neuron
+        port map (
+            input_data => input_reg,
+
+            weight0 => C_HIDDEN_WEIGHTS(2)(0),
+            weight1 => C_HIDDEN_WEIGHTS(2)(1),
+            weight2 => C_HIDDEN_WEIGHTS(2)(2),
+            weight3 => C_HIDDEN_WEIGHTS(2)(3),
+            weight4 => C_HIDDEN_WEIGHTS(2)(4),
+            weight5 => C_HIDDEN_WEIGHTS(2)(5),
+            weight6 => C_HIDDEN_WEIGHTS(2)(6),
+            weight7 => C_HIDDEN_WEIGHTS(2)(7),
+
+            bias => C_HIDDEN_BIAS(2),
+
+            neuron_out => neuron2_comb
+        );
+    
+    -- =========================================================================
+    -- Hidden neuron 3
+    -- =========================================================================
+
+    u_hidden_neuron3 : entity work.hidden_neuron
+        port map (
+            input_data => input_reg,
+
+            weight0 => C_HIDDEN_WEIGHTS(3)(0),
+            weight1 => C_HIDDEN_WEIGHTS(3)(1),
+            weight2 => C_HIDDEN_WEIGHTS(3)(2),
+            weight3 => C_HIDDEN_WEIGHTS(3)(3),
+            weight4 => C_HIDDEN_WEIGHTS(3)(4),
+            weight5 => C_HIDDEN_WEIGHTS(3)(5),
+            weight6 => C_HIDDEN_WEIGHTS(3)(6),
+            weight7 => C_HIDDEN_WEIGHTS(3)(7),
+
+            bias => C_HIDDEN_BIAS(3),
+
+            neuron_out => neuron3_comb
+        );
+
+    -- =========================================================================
+    -- Hidden neuron 4
+    -- =========================================================================
+
+    u_hidden_neuron4 : entity work.hidden_neuron
+        port map (
+            input_data => input_reg,
+
+            weight0 => C_HIDDEN_WEIGHTS(4)(0),
+            weight1 => C_HIDDEN_WEIGHTS(4)(1),
+            weight2 => C_HIDDEN_WEIGHTS(4)(2),
+            weight3 => C_HIDDEN_WEIGHTS(4)(3),
+            weight4 => C_HIDDEN_WEIGHTS(4)(4),
+            weight5 => C_HIDDEN_WEIGHTS(4)(5),
+            weight6 => C_HIDDEN_WEIGHTS(4)(6),
+            weight7 => C_HIDDEN_WEIGHTS(4)(7),
+
+            bias => C_HIDDEN_BIAS(4),
+
+            neuron_out => neuron4_comb
+        );
+
+    -- =========================================================================
+    -- Hidden neuron 5
+    -- =========================================================================
+
+    u_hidden_neuron5 : entity work.hidden_neuron
+        port map (
+            input_data => input_reg,
+
+            weight0 => C_HIDDEN_WEIGHTS(5)(0),
+            weight1 => C_HIDDEN_WEIGHTS(5)(1),
+            weight2 => C_HIDDEN_WEIGHTS(5)(2),
+            weight3 => C_HIDDEN_WEIGHTS(5)(3),
+            weight4 => C_HIDDEN_WEIGHTS(5)(4),
+            weight5 => C_HIDDEN_WEIGHTS(5)(5),
+            weight6 => C_HIDDEN_WEIGHTS(5)(6),
+            weight7 => C_HIDDEN_WEIGHTS(5)(7),
+
+            bias => C_HIDDEN_BIAS(5),
+
+            neuron_out => neuron5_comb
+        );
+    
+    -- =========================================================================
+    -- Hidden neuron 6
+    -- =========================================================================
+
+    u_hidden_neuron6 : entity work.hidden_neuron
+        port map (
+            input_data => input_reg,
+
+            weight0 => C_HIDDEN_WEIGHTS(6)(0),
+            weight1 => C_HIDDEN_WEIGHTS(6)(1),
+            weight2 => C_HIDDEN_WEIGHTS(6)(2),
+            weight3 => C_HIDDEN_WEIGHTS(6)(3),
+            weight4 => C_HIDDEN_WEIGHTS(6)(4),
+            weight5 => C_HIDDEN_WEIGHTS(6)(5),
+            weight6 => C_HIDDEN_WEIGHTS(6)(6),
+            weight7 => C_HIDDEN_WEIGHTS(6)(7),
+
+            bias => C_HIDDEN_BIAS(6),
+
+            neuron_out => neuron6_comb
+        );
+
+    -- =========================================================================
+    -- Hidden neuron 7
+    -- =========================================================================
+
+    u_hidden_neuron7 : entity work.hidden_neuron
+        port map (
+            input_data => input_reg,
+
+            weight0 => C_HIDDEN_WEIGHTS(7)(0),
+            weight1 => C_HIDDEN_WEIGHTS(7)(1),
+            weight2 => C_HIDDEN_WEIGHTS(7)(2),
+            weight3 => C_HIDDEN_WEIGHTS(7)(3),
+            weight4 => C_HIDDEN_WEIGHTS(7)(4),
+            weight5 => C_HIDDEN_WEIGHTS(7)(5),
+            weight6 => C_HIDDEN_WEIGHTS(7)(6),
+            weight7 => C_HIDDEN_WEIGHTS(7)(7),
+
+            bias => C_HIDDEN_BIAS(7),
+
+            neuron_out => neuron7_comb
+        );
+
+        -- =========================================================================
+    -- Assemble the hidden-layer vector
+    -- =========================================================================
+    --
+    -- Each neuron remains an explicitly instantiated entity.
+    --
+    -- These assignments simply collect their individual outputs into the
+    -- constrained t_hidden_vector representation.
+    -- =========================================================================
+
+    hidden_comb(0) <= neuron0_comb;
+    hidden_comb(1) <= neuron1_comb;
+    hidden_comb(2) <= neuron2_comb;
+    hidden_comb(3) <= neuron3_comb;
+    hidden_comb(4) <= neuron4_comb;
+    hidden_comb(5) <= neuron5_comb;
+    hidden_comb(6) <= neuron6_comb;
+    hidden_comb(7) <= neuron7_comb;
+
+
+    -- =========================================================================
+    -- Output Dense neuron
+    -- =========================================================================
+    --
+    -- The output neuron receives the registered hidden-layer vector.
+    --
+    -- It performs:
+    --
+    --     8 parallel multiplications
+    --              |
+    --              v
+    --       balanced adder tree
+    --              |
+    --              v
+    --        output bias
+    --              |
+    --              v
+    --      fixed-point rescaling
+    --              |
+    --              v
+    --         saturation
+    --
+    -- There is intentionally no ReLU at the final output because the predicted
+    -- return must be able to represent both positive and negative values.
+    -- =========================================================================
+
+    u_output_neuron : entity work.output_neuron
+        port map (
+            hidden_data => hidden_reg,
+            prediction  => output_comb
+        );
 
     -- =========================================================================
     -- Known-good diagnostic pipeline
@@ -222,6 +476,13 @@ begin
 
             if rst = '1' then
 
+                -- Clear the complete hidden-layer pipeline register.
+                hidden_reg <= (
+                    others => (
+                        others => '0'
+                    )
+                );
+
                 input_reg <= (
                     others => (
                         others => '0'
@@ -229,7 +490,20 @@ begin
                 );
 
                 valid_stage0 <= '0';
-                valid_stage1 <= '0';
+                valid_stage1 <= valid_stage0;
+
+                -- Capture the complete hidden-layer result one clock after the input vector
+                -- was registered.
+                --
+                -- hidden_comb is purely combinational.
+                --
+                -- hidden_reg therefore establishes the first arithmetic pipeline boundary.
+                if valid_stage0 = '1' then
+
+                    hidden_reg <=
+                        hidden_comb;
+
+                end if;
 
                 output_valid <= '0';
 
@@ -270,9 +544,9 @@ begin
 
                 if valid_stage1 = '1' then
 
-                    -- Expose the real result of hidden neuron 0.
+                    -- Register the actual output Dense-layer prediction.
                     output_data <=
-                        neuron0_comb;
+                        output_comb;
 
                     -- Keep latency hard-coded during arithmetic integration.
                     latency_cycles <=
