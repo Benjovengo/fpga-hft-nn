@@ -78,7 +78,6 @@ from python.reference_model import (
 #
 # Keeping this relatively small makes simulation fast while still providing
 # enough vectors to verify multiple numerical cases.
-NUMBER_VECTORS = 100
 
 
 # =============================================================================
@@ -208,9 +207,7 @@ def main():
         # ---------------------------------------------------------------------
 
         # Limit the number of vectors to NUMBER_VECTORS.
-        for sample in x_test[
-            :NUMBER_VECTORS
-        ]:
+        for sample in x_test:
 
             # Convert the floating-point feature vector into fixed-point integer
             # values.
