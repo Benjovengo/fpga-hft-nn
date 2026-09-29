@@ -53,6 +53,7 @@ set_global_assignment -name VHDL_FILE ../../rtl/arithmetic/fixed_mul.vhd
 set_global_assignment -name VHDL_FILE ../../rtl/arithmetic/adder_tree_8.vhd
 set_global_assignment -name VHDL_FILE ../../rtl/nn/hidden_neuron.vhd
 set_global_assignment -name VHDL_FILE ../../rtl/nn/dense_hidden.vhd
+set_global_assignment -name VHDL_FILE ../../rtl/nn/output_neuron.vhd
 
 # =============================================================================
 # Timing constraints
