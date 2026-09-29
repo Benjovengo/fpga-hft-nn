@@ -7,73 +7,70 @@ use work.nn_weights_pkg.all;
 
 
 -- =============================================================================
--- Neural-network core - incremental implementation step 6.2A
+-- Fixed-point 8 -> 8 -> 1 neural-network inference core
 -- =============================================================================
 --
--- This version introduces exactly ONE real hidden neuron.
+-- The network architecture is:
 --
--- The previous implementation introduced the complete dense_hidden hierarchy:
+--     8 input features
+--          |
+--          v
+--     input register
+--          |
+--          v
+--     Dense 8
+--          |
+--          v
+--       ReLU
+--          |
+--          v
+--     hidden register
+--          |
+--          v
+--     Dense 1
+--          |
+--          v
+--     output register
+--          |
+--          v
+-- predicted return
 --
---     generate 8 neurons
---         x
---     8 multipliers each
+-- The eight hidden neurons are instantiated explicitly.
 --
--- in one elaboration step.
+-- This intentionally avoids:
 --
--- Quartus Prime 25.1 Lite crashed while elaborating that hierarchy.
+--     generate loops
+--     generic neuron indexes
+--     native multidimensional weight arrays
 --
--- This version therefore keeps the known-good diagnostic pipeline and adds
--- only hidden neuron 0.
+-- because the previous hierarchy caused Quartus Prime 25.1 Lite to crash
+-- during VHDL elaboration.
 --
--- There is:
---
---     no generate loop
---     no dense_hidden instance
---     no generic neuron index
---
--- The weights and bias are connected explicitly.
---
--- Pipeline:
---
---     input_data
---         |
---         v
---     input_reg
---         |
---         v
---     hidden_neuron 0
---         |
---         v
---     neuron0_comb
---         |
---         v
---     output_data
---
+-- The arithmetic pipeline has two registered clock intervals between input
+-- acceptance and output validity.
 -- =============================================================================
 
 entity nn_core is
     port (
-        -- NN processing clock.
+        -- Neural-network processing clock.
         clk : in std_logic;
 
         -- Active-high synchronous reset.
         rst : in std_logic;
 
-        -- Indicates that input_data contains a new valid feature vector.
+        -- Asserted for one clock when input_data contains a new feature vector.
         input_valid : in std_logic;
 
-        -- Eight fixed-point input features.
+        -- Complete eight-feature input vector.
         input_data : in t_input_vector;
 
-        -- Indicates that output_data is valid.
+        -- Asserted when output_data contains the corresponding prediction.
         output_valid : out std_logic;
 
-        -- Temporary diagnostic output.
-        --
-        -- For this step it carries the output of hidden neuron 0.
+        -- Signed fixed-point predicted return.
         output_data : out t_data;
 
-        -- Temporary diagnostic latency.
+        -- Hardware-measured input-to-output latency in NN clock cycles.
         latency_cycles : out unsigned(
             C_TIMESTAMP_WIDTH - 1 downto 0
         )
@@ -84,7 +81,7 @@ end entity;
 architecture rtl of nn_core is
 
     -- =========================================================================
-    -- Registered input vector
+    -- Input pipeline register
     -- =========================================================================
 
     signal input_reg :
@@ -97,75 +94,26 @@ architecture rtl of nn_core is
 
 
     -- =========================================================================
-    -- One real hidden-neuron result
+    -- Individual combinational hidden-neuron outputs
     -- =========================================================================
 
-    signal neuron0_comb :
-        t_data;
+    signal neuron0_comb : t_data;
+    signal neuron1_comb : t_data;
+    signal neuron2_comb : t_data;
+    signal neuron3_comb : t_data;
+    signal neuron4_comb : t_data;
+    signal neuron5_comb : t_data;
+    signal neuron6_comb : t_data;
+    signal neuron7_comb : t_data;
 
 
     -- =========================================================================
-    -- Hidden neuron 1 result
+    -- Complete hidden-layer vectors
     -- =========================================================================
-    --
-    -- This signal carries the combinational output of hidden neuron 1.
-    --
-    -- At this stage there is still no hidden-layer register.
-    -- The purpose is only to verify that Quartus can elaborate two complete
-    -- hidden-neuron arithmetic hierarchies simultaneously.
-    signal neuron1_comb :
-        t_data;
-    
-    -- Combinational output from hidden neuron 2.
-    signal neuron2_comb :
-        t_data;
 
-    -- Combinational output from hidden neuron 3.
-    signal neuron3_comb :
-        t_data;
-
-    -- Combinational output from hidden neuron 4.
-    signal neuron4_comb :
-        t_data;
-
-    -- Combinational output from hidden neuron 5.
-    signal neuron5_comb :
-        t_data;
-
-    -- Combinational output from hidden neuron 6.
-    signal neuron6_comb :
-        t_data;
-
-    -- Combinational output from hidden neuron 7.
-    signal neuron7_comb :
-        t_data;
-
-    -- =========================================================================
-    -- Complete hidden-layer combinational vector
-    -- =========================================================================
-    --
-    -- The eight individually instantiated hidden neurons are collected into one
-    -- fixed-size vector.
-    --
-    -- No generate statement or multidimensional array is involved.
-    --
-    -- This vector later becomes the input to the hidden-layer pipeline register.
     signal hidden_comb :
         t_hidden_vector;
 
-    -- =========================================================================
-    -- Registered hidden-layer vector
-    -- =========================================================================
-    --
-    -- This register forms the pipeline boundary between:
-    --
-    --     Dense 8 + ReLU
-    --
-    -- and:
-    --
-    --     Dense 1
-    --
-    -- All eight hidden-neuron values are captured simultaneously.
     signal hidden_reg :
         t_hidden_vector :=
         (
@@ -174,19 +122,14 @@ architecture rtl of nn_core is
             )
         );
 
+
     -- =========================================================================
-    -- Output Dense-layer combinational result
+    -- Final output-neuron result
     -- =========================================================================
-    --
-    -- output_neuron computes:
-    --
-    --     Dense 8 -> 1
-    --
-    -- using the registered hidden-layer vector.
-    --
-    -- This result is captured into output_data on the next valid clock edge.
+
     signal output_comb :
         t_data;
+
 
     -- =========================================================================
     -- Valid pipeline
@@ -198,33 +141,45 @@ architecture rtl of nn_core is
     signal valid_stage1 :
         std_logic := '0';
 
+
+    -- =========================================================================
+    -- Latency instrumentation
+    -- =========================================================================
+
+    signal cycle_counter :
+        unsigned(
+            C_TIMESTAMP_WIDTH - 1 downto 0
+        ) :=
+        (
+            others => '0'
+        );
+
+    signal timestamp_stage0 :
+        unsigned(
+            C_TIMESTAMP_WIDTH - 1 downto 0
+        ) :=
+        (
+            others => '0'
+        );
+
+    signal timestamp_stage1 :
+        unsigned(
+            C_TIMESTAMP_WIDTH - 1 downto 0
+        ) :=
+        (
+            others => '0'
+        );
+
 begin
 
-    -- =============================================================================
+    -- =========================================================================
     -- Hidden neuron 0
-    -- =============================================================================
-    --
-    -- The weight matrix is represented as an array of t_input_vector objects.
-    --
-    -- Therefore:
-    --
-    --     C_HIDDEN_WEIGHTS(0)
-    --
-    -- selects the complete weight vector belonging to hidden neuron 0.
-    --
-    -- The second index:
-    --
-    --     (0) ... (7)
-    --
-    -- selects the individual feature weight from that vector.
-    -- =============================================================================
+    -- =========================================================================
 
     u_hidden_neuron0 : entity work.hidden_neuron
         port map (
-            -- Registered input feature vector.
             input_data => input_reg,
 
-            -- Eight weights belonging to hidden neuron 0.
             weight0 => C_HIDDEN_WEIGHTS(0)(0),
             weight1 => C_HIDDEN_WEIGHTS(0)(1),
             weight2 => C_HIDDEN_WEIGHTS(0)(2),
@@ -234,37 +189,20 @@ begin
             weight6 => C_HIDDEN_WEIGHTS(0)(6),
             weight7 => C_HIDDEN_WEIGHTS(0)(7),
 
-            -- Bias belonging to hidden neuron 0.
             bias => C_HIDDEN_BIAS(0),
 
-            -- Combinational hidden-neuron result.
             neuron_out => neuron0_comb
         );
-    
+
+
     -- =========================================================================
     -- Hidden neuron 1
-    -- =========================================================================
-    --
-    -- This is the second explicit hidden-neuron instance.
-    --
-    -- No generate statement is used.
-    --
-    -- The eight trained/bring-up weights are connected individually from row 1
-    -- of C_HIDDEN_WEIGHTS.
-    --
-    -- Weight indexing uses:
-    --
-    --     C_HIDDEN_WEIGHTS(neuron)(feature)
-    --
-    -- rather than a native two-dimensional VHDL array.
     -- =========================================================================
 
     u_hidden_neuron1 : entity work.hidden_neuron
         port map (
-            -- Registered feature vector shared by all hidden neurons.
             input_data => input_reg,
 
-            -- Weights belonging specifically to hidden neuron 1.
             weight0 => C_HIDDEN_WEIGHTS(1)(0),
             weight1 => C_HIDDEN_WEIGHTS(1)(1),
             weight2 => C_HIDDEN_WEIGHTS(1)(2),
@@ -274,12 +212,11 @@ begin
             weight6 => C_HIDDEN_WEIGHTS(1)(6),
             weight7 => C_HIDDEN_WEIGHTS(1)(7),
 
-            -- Bias belonging specifically to hidden neuron 1.
             bias => C_HIDDEN_BIAS(1),
 
-            -- Combinational ReLU result.
             neuron_out => neuron1_comb
         );
+
 
     -- =========================================================================
     -- Hidden neuron 2
@@ -302,7 +239,8 @@ begin
 
             neuron_out => neuron2_comb
         );
-    
+
+
     -- =========================================================================
     -- Hidden neuron 3
     -- =========================================================================
@@ -324,6 +262,7 @@ begin
 
             neuron_out => neuron3_comb
         );
+
 
     -- =========================================================================
     -- Hidden neuron 4
@@ -347,6 +286,7 @@ begin
             neuron_out => neuron4_comb
         );
 
+
     -- =========================================================================
     -- Hidden neuron 5
     -- =========================================================================
@@ -368,7 +308,8 @@ begin
 
             neuron_out => neuron5_comb
         );
-    
+
+
     -- =========================================================================
     -- Hidden neuron 6
     -- =========================================================================
@@ -390,6 +331,7 @@ begin
 
             neuron_out => neuron6_comb
         );
+
 
     -- =========================================================================
     -- Hidden neuron 7
@@ -413,14 +355,9 @@ begin
             neuron_out => neuron7_comb
         );
 
-        -- =========================================================================
-    -- Assemble the hidden-layer vector
+
     -- =========================================================================
-    --
-    -- Each neuron remains an explicitly instantiated entity.
-    --
-    -- These assignments simply collect their individual outputs into the
-    -- constrained t_hidden_vector representation.
+    -- Assemble complete hidden-layer vector
     -- =========================================================================
 
     hidden_comb(0) <= neuron0_comb;
@@ -436,28 +373,6 @@ begin
     -- =========================================================================
     -- Output Dense neuron
     -- =========================================================================
-    --
-    -- The output neuron receives the registered hidden-layer vector.
-    --
-    -- It performs:
-    --
-    --     8 parallel multiplications
-    --              |
-    --              v
-    --       balanced adder tree
-    --              |
-    --              v
-    --        output bias
-    --              |
-    --              v
-    --      fixed-point rescaling
-    --              |
-    --              v
-    --         saturation
-    --
-    -- There is intentionally no ReLU at the final output because the predicted
-    -- return must be able to represent both positive and negative values.
-    -- =========================================================================
 
     u_output_neuron : entity work.output_neuron
         port map (
@@ -465,8 +380,9 @@ begin
             prediction  => output_comb
         );
 
+
     -- =========================================================================
-    -- Known-good diagnostic pipeline
+    -- Pipeline and latency instrumentation
     -- =========================================================================
 
     process(clk)
@@ -474,14 +390,15 @@ begin
 
         if rising_edge(clk) then
 
+            -- Advance the free-running hardware timestamp.
+            cycle_counter <=
+                cycle_counter + 1;
+
             if rst = '1' then
 
-                -- Clear the complete hidden-layer pipeline register.
-                hidden_reg <= (
-                    others => (
-                        others => '0'
-                    )
-                );
+                -- -------------------------------------------------------------
+                -- Reset input stage
+                -- -------------------------------------------------------------
 
                 input_reg <= (
                     others => (
@@ -489,71 +406,120 @@ begin
                     )
                 );
 
+
+                -- -------------------------------------------------------------
+                -- Reset hidden stage
+                -- -------------------------------------------------------------
+
+                hidden_reg <= (
+                    others => (
+                        others => '0'
+                    )
+                );
+
+
+                -- -------------------------------------------------------------
+                -- Reset control pipeline
+                -- -------------------------------------------------------------
+
                 valid_stage0 <= '0';
-                valid_stage1 <= valid_stage0;
-
-                -- Capture the complete hidden-layer result one clock after the input vector
-                -- was registered.
-                --
-                -- hidden_comb is purely combinational.
-                --
-                -- hidden_reg therefore establishes the first arithmetic pipeline boundary.
-                if valid_stage0 = '1' then
-
-                    hidden_reg <=
-                        hidden_comb;
-
-                end if;
+                valid_stage1 <= '0';
 
                 output_valid <= '0';
+
+
+                -- -------------------------------------------------------------
+                -- Reset output
+                -- -------------------------------------------------------------
 
                 output_data <= (
                     others => '0'
                 );
 
+
+                -- -------------------------------------------------------------
+                -- Reset latency instrumentation
+                -- -------------------------------------------------------------
+
                 latency_cycles <= (
+                    others => '0'
+                );
+
+                cycle_counter <= (
+                    others => '0'
+                );
+
+                timestamp_stage0 <= (
+                    others => '0'
+                );
+
+                timestamp_stage1 <= (
                     others => '0'
                 );
 
             else
 
-                -- -------------------------------------------------------------
-                -- Input stage
-                -- -------------------------------------------------------------
+                -- =============================================================
+                -- Pipeline stage 0
+                -- Accept a new input vector
+                -- =============================================================
 
                 valid_stage0 <=
                     input_valid;
 
                 if input_valid = '1' then
 
+                    -- Capture all eight feature values simultaneously.
                     input_reg <=
                         input_data;
+
+                    -- Capture the cycle when this transaction entered the NN.
+                    timestamp_stage0 <=
+                        cycle_counter;
 
                 end if;
 
 
-                -- -------------------------------------------------------------
-                -- Temporary result stage
-                -- -------------------------------------------------------------
+                -- =============================================================
+                -- Pipeline stage 1
+                -- Register Dense 8 + ReLU
+                -- =============================================================
 
                 valid_stage1 <=
                     valid_stage0;
+
+                if valid_stage0 = '1' then
+
+                    -- Capture all eight hidden-neuron outputs.
+                    hidden_reg <=
+                        hidden_comb;
+
+                    -- Carry the matching input timestamp with the transaction.
+                    timestamp_stage1 <=
+                        timestamp_stage0;
+
+                end if;
+
+
+                -- =============================================================
+                -- Pipeline stage 2
+                -- Register Dense 1
+                -- =============================================================
 
                 output_valid <=
                     valid_stage1;
 
                 if valid_stage1 = '1' then
 
-                    -- Register the actual output Dense-layer prediction.
+                    -- Register the signed final prediction.
                     output_data <=
                         output_comb;
 
-                    -- Keep latency hard-coded during arithmetic integration.
+                    -- Measure deterministic input-to-output latency.
                     latency_cycles <=
-                        to_unsigned(
-                            2,
-                            C_TIMESTAMP_WIDTH
-                        );
+                        cycle_counter
+                        -
+                        timestamp_stage1;
 
                 end if;
 

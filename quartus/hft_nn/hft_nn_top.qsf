@@ -45,17 +45,29 @@ set_global_assignment -name VHDL_SHOW_LMF_MAPPING_MESSAGES OFF
 # RTL source files
 # =============================================================================
 
+# Common NN types and fixed-point helper functions.
 set_global_assignment -name VHDL_FILE ../../rtl/pkg/nn_types_pkg.vhd
+
+# Quantized NN weights and biases.
 set_global_assignment -name VHDL_FILE ../../rtl/pkg/nn_weights_pkg.vhd
 
+# Reusable arithmetic blocks.
 set_global_assignment -name VHDL_FILE ../../rtl/arithmetic/fixed_mul.vhd
 set_global_assignment -name VHDL_FILE ../../rtl/arithmetic/adder_tree_8.vhd
 
+# Explicit neural-network arithmetic hierarchy.
 set_global_assignment -name VHDL_FILE ../../rtl/nn/hidden_neuron.vhd
 set_global_assignment -name VHDL_FILE ../../rtl/nn/output_neuron.vhd
 set_global_assignment -name VHDL_FILE ../../rtl/nn/nn_core.vhd
 
+# Board-level top entity.
 set_global_assignment -name VHDL_FILE ../../rtl/top/hft_nn_top.vhd
+
+# dense_hidden.vhd is deliberately excluded.
+#
+# The current implementation explicitly instantiates all eight hidden neurons
+# inside nn_core to avoid the Quartus elaborator problem seen with the previous
+# generate/generic hierarchy.
 # set_global_assignment -name VHDL_FILE ../../rtl/nn/dense_hidden.vhd
 
 

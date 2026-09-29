@@ -106,16 +106,21 @@ architecture rtl of hft_nn_top is
     --
     --     1024 / 4096 = +0.2500
     --
-    constant C_TEST_INPUT : t_data_array(0 to C_INPUT_SIZE - 1) := (
-        0 => to_signed( 1024, C_DATA_WIDTH), -- +0.25000
-        1 => to_signed(  512, C_DATA_WIDTH), -- +0.12500
-        2 => to_signed( -256, C_DATA_WIDTH), -- -0.06250
-        3 => to_signed( 2048, C_DATA_WIDTH), -- +0.50000
-        4 => to_signed(  128, C_DATA_WIDTH), -- +0.03125
-        5 => to_signed( -128, C_DATA_WIDTH), -- -0.03125
-        6 => to_signed( 4096, C_DATA_WIDTH), -- +1.00000
-        7 => to_signed(  256, C_DATA_WIDTH)  -- +0.06250
-    );
+    -- Fixed-size demonstration feature vector.
+    --
+    -- t_input_vector is constrained to exactly C_INPUT_SIZE values and therefore
+    -- matches the nn_core interface directly.
+    constant C_TEST_INPUT :
+        t_input_vector := (
+            0 => to_signed( 1024, C_DATA_WIDTH), -- +0.25000
+            1 => to_signed(  512, C_DATA_WIDTH), -- +0.12500
+            2 => to_signed( -256, C_DATA_WIDTH), -- -0.06250
+            3 => to_signed( 2048, C_DATA_WIDTH), -- +0.50000
+            4 => to_signed(  128, C_DATA_WIDTH), -- +0.03125
+            5 => to_signed( -128, C_DATA_WIDTH), -- -0.03125
+            6 => to_signed( 4096, C_DATA_WIDTH), -- +1.00000
+            7 => to_signed(  256, C_DATA_WIDTH)  -- +0.06250
+        );
 
 
     -- =========================================================================
