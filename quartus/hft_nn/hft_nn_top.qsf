@@ -47,13 +47,17 @@ set_global_assignment -name VHDL_SHOW_LMF_MAPPING_MESSAGES OFF
 
 set_global_assignment -name VHDL_FILE ../../rtl/pkg/nn_types_pkg.vhd
 set_global_assignment -name VHDL_FILE ../../rtl/pkg/nn_weights_pkg.vhd
-set_global_assignment -name VHDL_FILE ../../rtl/nn/nn_core.vhd
-set_global_assignment -name VHDL_FILE ../../rtl/top/hft_nn_top.vhd
+
 set_global_assignment -name VHDL_FILE ../../rtl/arithmetic/fixed_mul.vhd
 set_global_assignment -name VHDL_FILE ../../rtl/arithmetic/adder_tree_8.vhd
+
 set_global_assignment -name VHDL_FILE ../../rtl/nn/hidden_neuron.vhd
-set_global_assignment -name VHDL_FILE ../../rtl/nn/dense_hidden.vhd
 set_global_assignment -name VHDL_FILE ../../rtl/nn/output_neuron.vhd
+set_global_assignment -name VHDL_FILE ../../rtl/nn/nn_core.vhd
+
+set_global_assignment -name VHDL_FILE ../../rtl/top/hft_nn_top.vhd
+# set_global_assignment -name VHDL_FILE ../../rtl/nn/dense_hidden.vhd
+
 
 # =============================================================================
 # Timing constraints

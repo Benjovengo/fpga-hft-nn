@@ -48,9 +48,7 @@ use work.nn_weights_pkg.all;
 entity output_neuron is
     port (
         -- Eight registered hidden-layer values.
-        hidden_data : in t_data_array(
-            0 to C_HIDDEN_SIZE - 1
-        );
+        hidden_data : in t_hidden_vector;
 
         -- Final fixed-point prediction.
         prediction : out t_data
