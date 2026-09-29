@@ -105,6 +105,19 @@ architecture rtl of nn_core is
 
 
     -- =========================================================================
+    -- Hidden neuron 1 result
+    -- =========================================================================
+    --
+    -- This signal carries the combinational output of hidden neuron 1.
+    --
+    -- At this stage there is still no hidden-layer register.
+    -- The purpose is only to verify that Quartus can elaborate two complete
+    -- hidden-neuron arithmetic hierarchies simultaneously.
+    signal neuron1_comb :
+        t_data;
+
+
+    -- =========================================================================
     -- Valid pipeline
     -- =========================================================================
 
@@ -155,6 +168,46 @@ begin
 
             -- Combinational hidden-neuron result.
             neuron_out => neuron0_comb
+        );
+    
+    -- =========================================================================
+    -- Hidden neuron 1
+    -- =========================================================================
+    --
+    -- This is the second explicit hidden-neuron instance.
+    --
+    -- No generate statement is used.
+    --
+    -- The eight trained/bring-up weights are connected individually from row 1
+    -- of C_HIDDEN_WEIGHTS.
+    --
+    -- Weight indexing uses:
+    --
+    --     C_HIDDEN_WEIGHTS(neuron)(feature)
+    --
+    -- rather than a native two-dimensional VHDL array.
+    -- =========================================================================
+
+    u_hidden_neuron1 : entity work.hidden_neuron
+        port map (
+            -- Registered feature vector shared by all hidden neurons.
+            input_data => input_reg,
+
+            -- Weights belonging specifically to hidden neuron 1.
+            weight0 => C_HIDDEN_WEIGHTS(1)(0),
+            weight1 => C_HIDDEN_WEIGHTS(1)(1),
+            weight2 => C_HIDDEN_WEIGHTS(1)(2),
+            weight3 => C_HIDDEN_WEIGHTS(1)(3),
+            weight4 => C_HIDDEN_WEIGHTS(1)(4),
+            weight5 => C_HIDDEN_WEIGHTS(1)(5),
+            weight6 => C_HIDDEN_WEIGHTS(1)(6),
+            weight7 => C_HIDDEN_WEIGHTS(1)(7),
+
+            -- Bias belonging specifically to hidden neuron 1.
+            bias => C_HIDDEN_BIAS(1),
+
+            -- Combinational ReLU result.
+            neuron_out => neuron1_comb
         );
 
 
